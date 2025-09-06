@@ -241,7 +241,10 @@ export const getTask = async (req: Request, res: Response) => {
     res.json(task);
   } catch (error) {
     console.error('Error fetching task:', error);
-    throw new AppError('Failed to fetch task', 500);
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+    return res.status(500).json({ message: 'Failed to fetch task' });
   }
 };
 
