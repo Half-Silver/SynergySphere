@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Task status values
+model TaskStatus {
+  id    Int     @id @default(autoincrement())
+  value String  @unique
+  label String
+  tasks Task[]  @relation("TaskStatus")
+}
+
+model Tag {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  projects Project[] @relation("ProjectTags")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  password     String
+  role         String    @default("USER") // 'USER' or 'ADMIN'
+  refreshToken String?   @unique
+  isActive     Boolean   @default(true)
+  lastLogin    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  // Relations
+  projects     ProjectMember[]
+  managedProjects Project[] @relation("ProjectManager")
+  assignedTasks Task[] @relation("TaskAssignee")
+  sentMessages Message[]
+  createdTasks  Task[]  @relation("TaskCreator")
+  comments      Comment[]
+}
+
+model Project {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  deadline    DateTime?
+  status      String    @default("ACTIVE") // ACTIVE, ARCHIVED, COMPLETED
+  tags        Tag[]     @relation("ProjectTags")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  managerId   String
+  manager     User      @relation("ProjectManager", fields: [managerId], references: [id])
+  members     ProjectMember[]
+  tasks       Task[]
+  messages    Message[]
+  
+  @@index([managerId])
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid())
+  role      String   @default("MEMBER") // MEMBER, ADMIN
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+  
+  @@unique([userId, projectId])
+  @@index([userId])
+  @@index([projectId])
+}
+
+model Task {
+  id          String      @id @default(uuid())
+  title       String
+  description String?
+  status      String      @default("TODO") // TODO, IN_PROGRESS, IN_REVIEW, DONE
+  statusRef   TaskStatus? @relation("TaskStatus", fields: [status], references: [value])
+  priority    String      @default("MEDIUM") // LOW, MEDIUM, HIGH
+  deadline    DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Relations
+  projectId   String
+  project     Project     @relation(fields: [projectId], references: [id])
+  createdById  String
+  createdBy   User        @relation("TaskCreator", fields: [createdById], references: [id])
+  assigneeId  String?
+  assignee    User?       @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  comments    Comment[]
+  
+  @@index([projectId])
+  @@index([createdById])
+  @@index([assigneeId])
+  @@index([status])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  @@index([taskId])
+  @@index([userId])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  
+  // Relations
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  @@index([projectId])
+  @@index([userId])
+}

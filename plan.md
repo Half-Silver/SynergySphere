@@ -17,7 +17,7 @@ Deliver a functional MVP with:
 
 Hour 1: Setup
 	•	Create GitHub repo.
-	•	Backend: Node.js + Express + SQLite (or PostgreSQL if you’re comfy).
+	•	Backend: Node.js + Express + PostgreSQL
 	•	Frontend: React (Vite) + TailwindCSS.
 	•	Set up routing (React Router).
 	•	Push initial commit.
